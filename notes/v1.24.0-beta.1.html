@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Macterm 1.24.0-beta.1 release notes</title>
+  <style>
+    body { font: 13px -apple-system, system-ui, sans-serif; color: #1d1d1f; padding: 16px; margin: 0; }
+    @media (prefers-color-scheme: dark) { body { color: #f5f5f7; background: transparent; } a { color: #6cb4ff; } }
+    h1, h2, h3 { margin-top: 0.6em; margin-bottom: 0.3em; }
+    h1 { font-size: 1.3em; } h2 { font-size: 1.15em; } h3 { font-size: 1em; }
+    p, ul, ol { margin: 0.4em 0; }
+    ul, ol { padding-left: 1.4em; }
+    code { background: rgba(127, 127, 127, 0.15); padding: 0 4px; border-radius: 3px; font: 12px ui-monospace, monospace; }
+    pre { background: rgba(127, 127, 127, 0.12); padding: 8px; border-radius: 4px; overflow-x: auto; }
+    pre code { background: transparent; padding: 0; }
+    a { color: #0366d6; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<h2>What's New</h2>
+<ul>
+<li>The ssh shell-integration features (<code class="notranslate">ssh-env</code>, <code class="notranslate">ssh-terminfo</code>) now work without Ghostty.app installed: Macterm itself installs its terminfo on the host at first connect and forwards truecolor, and the same engine is available directly as <code class="notranslate">macterm ssh</code>. (#274)</li>
+<li>Folder permissions (Documents, Downloads, …) now survive updates instead of resetting on every release, and Settings warns when Full Disk Access is off, with a shortcut to grant it. (#273)</li>
+<li>The quick terminal's position and size can each be set to Fixed or Dynamic in Settings. (#267)</li>
+<li>Disabled settings are now visibly dimmed across the Settings window. (#268)</li>
+</ul>
+<h2>Fixes</h2>
+<ul>
+<li>The quick terminal now honors the liquid glass appearance setting. (#269)</li>
+<li>Dragging the quick terminal by its strip now shows a grabbing hand. (#270)</li>
+<li>The sidebar now reopens at the width you left it at, instead of a content-derived default. (#264)</li>
+</ul>
+<h2>Notes</h2>
+<ul>
+<li>This is a beta: it reaches auto-update only on the Beta channel (Settings → Updates → Channel) or as a direct DMG download; Homebrew serves stable releases only.</li>
+<li>The terminfo install now also works on hosts whose login shell isn't POSIX (nushell, fish). The <code class="notranslate">path</code> shell-integration feature is permanently off — Macterm ships no <code class="notranslate">ghostty</code> CLI to put on your PATH.</li>
+<li>The first update from an earlier release resets folder permissions one last time (the signing identity became stable); grants stick from then on.</li>
+</ul>
+<h2>Contributors</h2>
+<p>Thanks to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/thdxg/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/thdxg">@thdxg</a> for this release.</p>
+</body>
+</html>
