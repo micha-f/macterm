@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Macterm 1.24.0-beta.5 release notes</title>
+  <style>
+    body { font: 13px -apple-system, system-ui, sans-serif; color: #1d1d1f; padding: 16px; margin: 0; }
+    @media (prefers-color-scheme: dark) { body { color: #f5f5f7; background: transparent; } a { color: #6cb4ff; } }
+    h1, h2, h3 { margin-top: 0.6em; margin-bottom: 0.3em; }
+    h1 { font-size: 1.3em; } h2 { font-size: 1.15em; } h3 { font-size: 1em; }
+    p, ul, ol { margin: 0.4em 0; }
+    ul, ol { padding-left: 1.4em; }
+    code { background: rgba(127, 127, 127, 0.15); padding: 0 4px; border-radius: 3px; font: 12px ui-monospace, monospace; }
+    pre { background: rgba(127, 127, 127, 0.12); padding: 8px; border-radius: 4px; overflow-x: auto; }
+    pre code { background: transparent; padding: 0; }
+    a { color: #0366d6; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<h2>What's New</h2>
+<ul>
+<li>Remote panes now reconnect themselves after a dropped connection (sleep, a network change) instead of sitting on a dead-pane screen until you quit and relaunch — the session keeps running on the host and its scrollback is replayed into the recovered pane. (#291)</li>
+<li>Remote sessions left behind on a host that was unreachable when a pane closed are now cleaned up automatically, and only ever the ones this Mac created. (#291)</li>
+<li>Close Tab is now a command in the palette, the File menu, and Settings → Keymaps as a rebindable shortcut (unbound by default), closing the active tab whether it is pinned or not. (#293)</li>
+</ul>
+<h2>Fixes</h2>
+<ul>
+<li>Typing in a pane no longer stops working when focus leaves it in the middle of an IME composition. (#296)</li>
+<li>Macterm now merges every Ghostty config file Ghostty itself merges, instead of loading only one of them and dropping valid overrides. (#292)</li>
+<li>Dragging a pane now previews one predictable drop target on the pane under the cursor, rather than two different shapes for the same result. (#294)</li>
+</ul>
+<h2>Notes</h2>
+<ul>
+<li>Automatic reconnection can be turned off in Settings → General → Remote Projects — useful on hosts whose SSH keys are Touch ID-gated, where waking with several dropped panes means several prompts.</li>
+<li>The pinned tab context menu's "Remove from Pinned" is gone; Unpin Tab is the removal path, and it now also works on an unloaded (dimmed) pinned row.</li>
+<li>Dropping a pane onto a divider to make thirds is no longer reachable by dragging.</li>
+</ul>
+<p>Thanks to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/thdxg/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/thdxg">@thdxg</a> and <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/halms/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/halms">@halms</a> for this release.</p>
+</body>
+</html>
