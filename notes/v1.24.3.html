@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Macterm 1.24.3 release notes</title>
+  <style>
+    body { font: 13px -apple-system, system-ui, sans-serif; color: #1d1d1f; padding: 16px; margin: 0; }
+    @media (prefers-color-scheme: dark) { body { color: #f5f5f7; background: transparent; } a { color: #6cb4ff; } }
+    h1, h2, h3 { margin-top: 0.6em; margin-bottom: 0.3em; }
+    h1 { font-size: 1.3em; } h2 { font-size: 1.15em; } h3 { font-size: 1em; }
+    p, ul, ol { margin: 0.4em 0; }
+    ul, ol { padding-left: 1.4em; }
+    code { background: rgba(127, 127, 127, 0.15); padding: 0 4px; border-radius: 3px; font: 12px ui-monospace, monospace; }
+    pre { background: rgba(127, 127, 127, 0.12); padding: 8px; border-radius: 4px; overflow-x: auto; }
+    pre code { background: transparent; padding: 0; }
+    a { color: #0366d6; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<h2>What's New</h2>
+<ul>
+<li>A new Tip update channel in Settings → Updates follows every commit that passes CI, so you can run what <code class="notranslate">main</code> does without building it yourself. (#310)</li>
+<li>The "Match terminal app backgrounds" toggle is now called Adaptive background and sits in Settings → Appearance → Window alongside the other background controls. (#311)</li>
+</ul>
+<h2>Fixes</h2>
+<ul>
+<li>Adaptive background now works when ghostty's <code class="notranslate">background-opacity-cells</code> is enabled — it previously did nothing at all in that case. (#309)</li>
+<li>A pane matched to a terminal app's background now composites at the same opacity as the rest of the window, instead of reading noticeably more opaque than the app around it. (#309)</li>
+</ul>
+<h2>Notes</h2>
+<ul>
+<li>Tip builds are cut from every passing commit and are not release-tested. Stable remains the default channel, and Homebrew always tracks stable.</li>
+</ul>
+<p>Thanks to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/thdxg/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/thdxg">@thdxg</a> for this release.</p>
+</body>
+</html>
