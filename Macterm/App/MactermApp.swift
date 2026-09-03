@@ -258,13 +258,9 @@ struct MactermApp: App {
 /// downstream — re-evaluates when the resolved theme changes. Without this the
 /// chrome would freeze at its launch appearance, since `MactermTheme.colorScheme`
 /// reads `NSApp`/theme files rather than observable state (issue #38).
-/// The main window's confirmation alerts, in three modifiers rather than one
-/// chain on `MainWindow()`. This is NOT organizational tidying: with all seven
-/// `.alert`s chained into `MactermApp.body`'s single expression, the type
-/// checker gives up outright ("unable to type-check this expression in
-/// reasonable time") — each `.alert` carries three generic parameters and two
-/// closures, and the cost compounds. Add a new alert to one of these, or make
-/// a fourth; never re-grow the chain in `body`.
+/// The main window's confirmation alerts, split across three modifiers because
+/// all seven chained into `MactermApp.body` defeat the type checker on Xcode
+/// 26.3. Add new alerts to one of these — never back into `body`.
 private struct CloseConfirmationAlerts: ViewModifier {
     let appState: AppState
 
