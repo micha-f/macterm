@@ -501,21 +501,23 @@ struct SidebarContent: View {
     }
 
     private func tabRow(tab: TerminalTab, index tabIndex: Int, project: Project) -> some View {
-        SidebarTabRow(
-            tab: tab,
-            index: tabIndex + 1,
-            selectionItem: .tab(projectID: project.id, tabID: tab.id),
-            presentation: presentation,
-            isInteractive: isInteractive,
-            // An unloaded project keeps its tabs as a layout with no shells
-            // behind them — the same state a closed pinned tab is in, so it
-            // gets the same dimmed treatment.
-            isUnloaded: appState.isProjectUnloaded(project.id),
-            onRename: { newName in
-                tab.customTitle = newName.isEmpty ? nil : newName
-                appState.saveWorkspaces()
-            }
-        )
+        ProjectColorStripe(color: project.color) {
+            SidebarTabRow(
+                tab: tab,
+                index: tabIndex + 1,
+                selectionItem: .tab(projectID: project.id, tabID: tab.id),
+                presentation: presentation,
+                isInteractive: isInteractive,
+                // An unloaded project keeps its tabs as a layout with no shells
+                // behind them — the same state a closed pinned tab is in, so it
+                // gets the same dimmed treatment.
+                isUnloaded: appState.isProjectUnloaded(project.id),
+                onRename: { newName in
+                    tab.customTitle = newName.isEmpty ? nil : newName
+                    appState.saveWorkspaces()
+                }
+            )
+        }
         .padding(.trailing, rowTrailingInset)
         // Stretch to the full row and make every point hit-testable: without
         // this, the drag grab area hugs the label's intrinsic width instead
@@ -736,6 +738,9 @@ struct SidebarContent: View {
         }
         Divider()
         Button("Rename Project") { requestProjectRename(project.id) }
+        ProjectColorMenu(selection: project.color) { color in
+            projectStore.setColor(id: project.id, to: color)
+        }
         Divider()
         // Same reorder calls as Settings → Projects' rows; `toOffset` is in
         // `move(fromOffsets:toOffset:)` convention, hence `+ 2` for down.
@@ -1009,13 +1014,24 @@ private struct SidebarProjectRow: View {
     var body: some View {
         Group {
             if projectIconSymbol == Preferences.noIcon {
-                titleContent
-                    .padding(.leading, 6)
+                // No glyph to tint with icons off, so the tag shows as the
+                // same stripe its tab rows carry.
+                ProjectColorStripe(color: project.color) {
+                    titleContent
+                }
+                .padding(.leading, 6)
             } else {
                 Label {
                     titleContent
                 } icon: {
-                    SidebarRowIcon(symbol: projectIconSymbol, index: index)
+                    // Only when tagged: forcing a color on an untagged row
+                    // would flatten the styling AppKit gives a selected row.
+                    if let color = project.color {
+                        SidebarRowIcon(symbol: projectIconSymbol, index: index)
+                            .foregroundStyle(MactermTheme.color(for: color))
+                    } else {
+                        SidebarRowIcon(symbol: projectIconSymbol, index: index)
+                    }
                 }
             }
         }
@@ -1376,114 +1392,32 @@ private struct TabStatusGlyph: View {
     }
 }
 
-private extension AgentIcon {
-    /// The agent's brand tint. These are vendor identity colors, not theme
-    /// colors, so they're the one deliberate exception to "all colors come
-    /// from MactermTheme". Monochrome brands (Cursor, Grok, opencode) use
-    /// `.primary` so they stay black-on-light / white-on-dark like the brand.
-    var brandColor: Color {
-        switch self {
-        case .claude: Color(red: 0xD9 / 255, green: 0x77 / 255, blue: 0x57 / 255) // Anthropic coral
-        case .codex: Color(red: 0xAB / 255, green: 0xAB / 255, blue: 0xAB / 255) // OpenAI light gray
-        case .gemini: Color(red: 0x42 / 255, green: 0x85 / 255, blue: 0xF4 / 255) // Google blue
-        case .copilot: Color(red: 0x89 / 255, green: 0x57 / 255, blue: 0xE5 / 255) // GitHub purple
-        case .antigravity: Color(red: 0x31 / 255, green: 0x86 / 255, blue: 0xFF / 255) // Google Antigravity blue
-        case .opencode,
-             .cursor,
-             .grok,
-             .pi: .primary
-        }
-    }
-}
-
-private struct SidebarRowIcon: View {
-    let symbol: String
-    let index: Int
-    var agent: AgentIcon?
-    @AppStorage(Preferences.Keys.sidebarIconSize)
-    private var iconSizeRaw = SidebarIconSize.medium.rawValue
-    /// Scales with the user's text size like the sibling SF Symbols do; a
-    /// fixed 15pt would stay small next to enlarged row text.
+/// Prefixes a sidebar row with its project's color: a bar at the leading edge,
+/// so a project's tabs read as its own. No gutter is reserved when untagged —
+/// tagging is opt-in, and reserving it would re-indent every sidebar.
+private struct ProjectColorStripe<Content: View>: View {
+    private let color: ProjectColor?
+    private let content: Content
+    /// Scaled with the row's text. Fixed rather than stretched: a
+    /// `maxHeight: .infinity` child can grow a List row instead of filling it.
     @ScaledMetric(relativeTo: .body)
-    private var agentIconSize: CGFloat = 15
+    private var height: CGFloat = 15
 
-    private var size: SidebarIconSize {
-        SidebarIconSize(rawValue: iconSizeRaw) ?? .medium
+    init(color: ProjectColor?, @ViewBuilder content: () -> Content) {
+        self.color = color
+        self.content = content()
     }
 
     var body: some View {
-        if let agent {
-            // A live AI agent in the tab overrides the user's chosen icon —
-            // the logo is a status signal, tinted with the agent's brand color
-            // (overriding the row's .secondary tint).
-            let side = agentIconSize * size.glyphScale
-            Image(agent.rawValue)
-                .renderingMode(.template)
-                .resizable()
-                .scaledToFit()
-                .frame(width: side, height: side)
-                .foregroundStyle(agent.brandColor)
-        } else if Preferences.numberIconChoices.contains(symbol) {
-            NumberGlyph(index: index, variant: symbol, size: size)
+        if let color {
+            HStack(spacing: 6) {
+                Capsule(style: .continuous)
+                    .fill(MactermTheme.color(for: color))
+                    .frame(width: 3, height: height)
+                content
+            }
         } else {
-            Image(systemName: symbol)
-                .imageScale(size.imageScale)
-        }
-    }
-}
-
-private extension SidebarIconSize {
-    /// SwiftUI's own symbol scaling, which sizes a symbol against whatever font
-    /// the row hands it. `medium` is the default, so the middle case leaves an
-    /// icon exactly the size it was before this preference existed rather than
-    /// pinning it to a point size of our own.
-    var imageScale: Image.Scale {
-        switch self {
-        case .small: .small
-        case .medium: .medium
-        case .large: .large
-        }
-    }
-}
-
-private struct NumberGlyph: View {
-    let index: Int
-    let variant: String
-    var size: SidebarIconSize = .medium
-    /// The `.body` point size, as a metric so the digits keep tracking the
-    /// user's text size once `glyphScale` has been applied — `imageScale` is
-    /// no help here, since these variants draw text rather than a symbol.
-    @ScaledMetric(relativeTo: .body)
-    private var bodyFontSize: CGFloat = 13
-
-    private var digitFont: Font {
-        .system(size: bodyFontSize * size.glyphScale).monospacedDigit()
-    }
-
-    var body: some View {
-        if variant == Preferences.numberIconPlain {
-            Text("\(index)")
-                .font(digitFont)
-        } else if let suffix = shapeSuffix, (1 ... 50).contains(index) {
-            // SF Symbols ships `1.<shape>` through `50.<shape>`; beyond that,
-            // fall back to plain digits so we don't render a missing glyph.
-            Image(systemName: "\(index).\(suffix)")
-                .imageScale(size.imageScale)
-        } else {
-            Text("\(index)")
-                .font(digitFont)
-        }
-    }
-
-    /// Maps the sentinel token (e.g. `number.circle.fill`) to the suffix used
-    /// by the indexed SF Symbol (e.g. `circle.fill` in `1.circle.fill`).
-    private var shapeSuffix: String? {
-        switch variant {
-        case Preferences.numberIconCircleFill: "circle.fill"
-        case Preferences.numberIconCircle: "circle"
-        case Preferences.numberIconSquareFill: "square.fill"
-        case Preferences.numberIconSquare: "square"
-        default: nil
+            content
         }
     }
 }

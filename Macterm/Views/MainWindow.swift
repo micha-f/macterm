@@ -201,6 +201,12 @@ struct MainWindow: View {
                         TabSwitcherToolbarItem(availableWidth: detailWidth)
                     }
                 }
+                // Declared last among the `.navigation` items so it lands
+                // nearest the window title — the badge reads as part of the
+                // header, not as a control next to the sidebar toggle.
+                ToolbarItem(placement: .navigation) {
+                    ProjectColorBadge(project: activeProject, index: activeProjectIndex)
+                }
             }
         }
         .overlay(alignment: .leading) {
@@ -732,6 +738,15 @@ struct MainWindow: View {
         return projectStore.projects.first { $0.id == pid }
     }
 
+    /// 1-based position of the active project, matching what its sidebar row
+    /// shows when the icon preference is a position number.
+    private var activeProjectIndex: Int {
+        guard let id = appState.activeProjectID,
+              let index = projectStore.projects.firstIndex(where: { $0.id == id })
+        else { return 1 }
+        return index + 1
+    }
+
     private var activeProjectWithWorkspace: Project? {
         guard let project = activeProject, appState.workspaces[project.id] != nil else { return nil }
         return project
@@ -746,6 +761,35 @@ struct MainWindow: View {
         // The pinned workspace has no project directory worth advertising.
         if project.id == PinnedTabs.projectID { return "" }
         return project.path
+    }
+}
+
+/// The active project's color tag beside the window title, drawn through the
+/// same `SidebarRowIcon` the sidebar row uses — deriving the symbol here
+/// separately put a folder in the titlebar beside a numbered sidebar row.
+///
+/// "None" can't be honored literally (the badge would vanish and take the
+/// color with it), so it falls back to a dot. Nothing renders for an untagged
+/// project.
+private struct ProjectColorBadge: View {
+    let project: Project?
+    let index: Int
+    @AppStorage(Preferences.Keys.projectIconSymbol)
+    private var projectIconSymbol = "folder"
+
+    var body: some View {
+        if let project, let color = project.color {
+            Group {
+                if projectIconSymbol == Preferences.noIcon {
+                    Image(systemName: "circle.fill")
+                        .imageScale(.small)
+                } else {
+                    SidebarRowIcon(symbol: projectIconSymbol, index: index)
+                }
+            }
+            .foregroundStyle(MactermTheme.color(for: color))
+            .accessibilityLabel("\(project.name), \(color.displayName)")
+        }
     }
 }
 
