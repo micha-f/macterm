@@ -88,6 +88,7 @@ final class ControlHandler {
         case "session.kill": return try await sessionKill(args)
         case "layout.apply": return try layoutApply(args)
         case "layout.save": return try layoutSave(args)
+        case "tutor.render": return try tutorRender(args)
         default:
             throw ControlError(
                 code: .unknownCommand,
@@ -107,6 +108,23 @@ final class ControlHandler {
             pid: getpid(),
             activeProject: active?.name,
             activeProjectID: active?.id.uuidString
+        ))
+    }
+
+    /// Render a tutorial topic (`macterm tutor`). App-side because the text
+    /// carries the user's LIVE keybindings — see `Tutorial`.
+    private func tutorRender(_ args: ControlArgs) throws -> ControlData {
+        let raw = args.topic ?? Tutorial.Topic.project.rawValue
+        guard let topic = Tutorial.Topic(rawValue: raw) else {
+            throw ControlError(
+                code: .badRequest,
+                message: "unknown tutorial topic \"\(raw)\"",
+                action: "known topics: " + Tutorial.Topic.allCases.map(\.rawValue).joined(separator: ", ")
+            )
+        }
+        return ControlData(tutorial: ControlTutorial(
+            topic: topic.rawValue,
+            text: Tutorial.render(topic: topic, styled: args.styled ?? false)
         ))
     }
 
@@ -420,8 +438,12 @@ final class ControlHandler {
 
     private func tabNew(_ args: ControlArgs) throws -> ControlData {
         let (project, workspace) = try resolveWorkspace(args)
-        guard let tabID = appState.createTab(projectID: project.id, projectPath: project.path, command: args.run),
-              let index = workspace.tabs.firstIndex(where: { $0.id == tabID })
+        guard let tabID = appState.createTab(
+            projectID: project.id,
+            projects: projectStore.projects,
+            command: args.run
+        ),
+            let index = workspace.tabs.firstIndex(where: { $0.id == tabID })
         else {
             throw ControlError(code: .internalError, message: "tab creation failed")
         }
@@ -547,7 +569,11 @@ final class ControlHandler {
             throw ControlError(code: .badRequest, message: "direction must be right, down, or auto")
         }
         guard let newID = appState.splitPane(
-            target.pane.id, direction: direction, projectID: project.id, command: args.run
+            target.pane.id,
+            direction: direction,
+            projectID: project.id,
+            projectDirectory: project.path,
+            command: args.run
         ), let newPane = target.tab.splitRoot.findPane(id: newID)
         else {
             throw ControlError(code: .internalError, message: "split failed")
@@ -832,7 +858,12 @@ final class ControlHandler {
         let (project, workspace) = try resolveWorkspace(args)
         let target = try resolvePane(args, in: workspace)
         let created = appState.makeGrid(
-            target.pane.id, rows: rows, columns: cols, projectID: project.id, command: args.run
+            target.pane.id,
+            rows: rows,
+            columns: cols,
+            projectID: project.id,
+            projectDirectory: project.path,
+            command: args.run
         )
         guard !created.isEmpty else {
             throw ControlError(code: .internalError, message: "grid produced no panes")
