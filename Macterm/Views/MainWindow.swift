@@ -205,7 +205,7 @@ struct MainWindow: View {
                 // nearest the window title — the badge reads as part of the
                 // header, not as a control next to the sidebar toggle.
                 ToolbarItem(placement: .navigation) {
-                    ProjectColorBadge(project: activeProject, index: activeProjectIndex)
+                    ProjectColorBadge(project: activeProject)
                 }
             }
         }
@@ -738,15 +738,6 @@ struct MainWindow: View {
         return projectStore.projects.first { $0.id == pid }
     }
 
-    /// 1-based position of the active project, matching what its sidebar row
-    /// shows when the icon preference is a position number.
-    private var activeProjectIndex: Int {
-        guard let id = appState.activeProjectID,
-              let index = projectStore.projects.firstIndex(where: { $0.id == id })
-        else { return 1 }
-        return index + 1
-    }
-
     private var activeProjectWithWorkspace: Project? {
         guard let project = activeProject, appState.workspaces[project.id] != nil else { return nil }
         return project
@@ -764,31 +755,27 @@ struct MainWindow: View {
     }
 }
 
-/// The active project's color tag beside the window title, drawn through the
-/// same `SidebarRowIcon` the sidebar row uses — deriving the symbol here
-/// separately put a folder in the titlebar beside a numbered sidebar row.
+/// The active project's color tag beside the window title: a dot, never the
+/// project's own icon. Drawing the icon was tried and dropped in review — at
+/// titlebar size a tinted folder reads as a control rather than as a tag. The
+/// dot is sized explicitly rather than left to a toolbar item's own layout,
+/// which is what made the icon version outsize the title next to it.
 ///
-/// "None" can't be honored literally (the badge would vanish and take the
-/// color with it), so it falls back to a dot. Nothing renders for an untagged
-/// project.
+/// Nothing renders for an untagged project, or for the pinned rows (they have
+/// no project, so `activeProject` is nil).
 private struct ProjectColorBadge: View {
     let project: Project?
-    let index: Int
-    @AppStorage(Preferences.Keys.projectIconSymbol)
-    private var projectIconSymbol = "folder"
+    /// Tracks the title's text size, so the dot keeps its proportion when the
+    /// user scales text up.
+    @ScaledMetric(relativeTo: .body)
+    private var diameter: CGFloat = 10
 
     var body: some View {
         if let project, let color = project.color {
-            Group {
-                if projectIconSymbol == Preferences.noIcon {
-                    Image(systemName: "circle.fill")
-                        .imageScale(.small)
-                } else {
-                    SidebarRowIcon(symbol: projectIconSymbol, index: index)
-                }
-            }
-            .foregroundStyle(MactermTheme.color(for: color))
-            .accessibilityLabel("\(project.name), \(color.displayName)")
+            Circle()
+                .fill(MactermTheme.color(for: color))
+                .frame(width: diameter, height: diameter)
+                .accessibilityLabel("\(project.name), \(color.displayName)")
         }
     }
 }

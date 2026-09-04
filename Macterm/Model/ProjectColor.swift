@@ -1,7 +1,7 @@
 import Foundation
 
-/// A project's optional color tag, drawn on the sidebar folder icon, its tab
-/// rows' stripe, and the window header badge.
+/// A project's optional color tag, drawn on the sidebar icons of the project
+/// and of each of its tabs, and as a dot beside the window title.
 ///
 /// Fixed system colors, not the ghostty palette — the same exception
 /// `AgentIcon.brandColor` takes. Deriving them from the user's theme was tried
