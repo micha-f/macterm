@@ -250,17 +250,14 @@ struct MactermApp: App {
     }
 }
 
-/// Applies the app-wide light/dark scheme derived from the ghostty theme.
-///
-/// Reading `GhosttyApp.shared.configVersion` (an `@Observable` property bumped
-/// on config reload and on system appearance changes) registers a SwiftUI
-/// dependency, so `.preferredColorScheme` — and every `MactermTheme` color read
-/// downstream — re-evaluates when the resolved theme changes. Without this the
-/// chrome would freeze at its launch appearance, since `MactermTheme.colorScheme`
-/// reads `NSApp`/theme files rather than observable state (issue #38).
 /// The main window's confirmation alerts, split across three modifiers because
 /// all seven chained into `MactermApp.body` defeat the type checker on Xcode
 /// 26.3. Add new alerts to one of these — never back into `body`.
+///
+/// Every alert across these three that Settings also carries is gated on the
+/// staging call's `DialogHost` — see the enum's doc comment: an ungated binding
+/// presents in BOTH scenes, which opens the settings window just to stack a
+/// duplicate dialog.
 private struct CloseConfirmationAlerts: ViewModifier {
     let appState: AppState
 
@@ -306,10 +303,6 @@ private struct ProjectConfirmationAlerts: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            // Every alert below that Settings also carries is gated on the
-            // staging call's `DialogHost` — see the enum's doc comment: an
-            // ungated binding presents in BOTH scenes, which opens the
-            // settings window just to stack a duplicate dialog.
             .alert(
                 "Unload project with running processes?",
                 isPresented: Binding(
@@ -402,6 +395,14 @@ private struct LayoutAlerts: ViewModifier {
     }
 }
 
+/// Applies the app-wide light/dark scheme derived from the ghostty theme.
+///
+/// Reading `GhosttyApp.shared.configVersion` (an `@Observable` property bumped
+/// on config reload and on system appearance changes) registers a SwiftUI
+/// dependency, so `.preferredColorScheme` — and every `MactermTheme` color read
+/// downstream — re-evaluates when the resolved theme changes. Without this the
+/// chrome would freeze at its launch appearance, since `MactermTheme.colorScheme`
+/// reads `NSApp`/theme files rather than observable state (issue #38).
 private struct AppColorScheme: ViewModifier {
     func body(content: Content) -> some View {
         // Touch configVersion so SwiftUI tracks it as a dependency and
