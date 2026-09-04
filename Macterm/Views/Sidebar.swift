@@ -1014,7 +1014,8 @@ private struct SidebarProjectRow: View {
         Group {
             if projectIconSymbol == Preferences.noIcon {
                 // No glyph to tint with icons off, so the tag falls back to
-                // a stripe, as this project's tab rows do.
+                // a stripe. Only here: a tab row under the same preference
+                // shows no tag rather than a second column of stripes.
                 ProjectColorStripe(color: project.color) {
                     titleContent
                 }
@@ -1085,8 +1086,10 @@ private struct SidebarTabRow: View {
     /// was unloaded). Matches the unloaded pinned row's treatment — secondary
     /// title, tertiary icon, and a tooltip saying what selecting it does.
     var isUnloaded = false
-    /// The owning project's color tag, drawn on this row's icon. Nil for an
-    /// untagged project and for the pinned rows, which belong to none.
+    /// The owning project's color tag, drawn on whatever glyph this row's
+    /// icon slot holds — and on nothing at all when it holds none, since a
+    /// tab row never carries a stripe. Nil for an untagged project and for
+    /// the pinned rows, which belong to none.
     var projectColor: ProjectColor?
     let onRename: (String) -> Void
     @Environment(AppState.self)
@@ -1140,37 +1143,37 @@ private struct SidebarTabRow: View {
     var body: some View {
         Group {
             if iconSymbol == Preferences.noIcon {
-                // Nothing of ours in the icon slot to carry the tag — the
-                // agent logo and the status glyph are their own signals — so
-                // it falls back to a leading stripe, the same treatment the
-                // project row takes with icons off.
-                ProjectColorStripe(color: projectColor) {
-                    Label {
-                        titleContent
-                    } icon: {
-                        if showTabStatusIndicator, tab.executionState != .idle || agentIcon != nil {
-                            // Only give the label an icon while the status
-                            // glyph actually draws something (spinner, done
-                            // dot, agent logo). An idle status with "None"
-                            // renders the sentinel as an invisible Image that
-                            // still reserves the icon column, nudging the
-                            // title right of every other icon-less row.
-                            TabStatusGlyph(
-                                state: tab.executionState,
-                                symbol: iconSymbol,
-                                index: index,
-                                agent: agentIcon,
-                                spinnerOverAgent: showSpinnerOverAgentIcons
-                            )
-                        } else if let agentIcon {
-                            // "None" suppresses the user's icon, not the agent
-                            // logo — a live status signal, like the else branch.
-                            SidebarRowIcon(symbol: iconSymbol, index: index, agent: agentIcon)
-                                .foregroundStyle(.secondary)
-                        }
+                Label {
+                    titleContent
+                } icon: {
+                    if showTabStatusIndicator, tab.executionState != .idle || agentIcon != nil {
+                        // Only give the label an icon while the status glyph
+                        // actually draws something (spinner, done dot, agent
+                        // logo). An idle status with "None" renders the
+                        // sentinel as an invisible Image that still reserves
+                        // the icon column, nudging the title right of every
+                        // other icon-less row.
+                        TabStatusGlyph(
+                            state: tab.executionState,
+                            symbol: iconSymbol,
+                            index: index,
+                            agent: agentIcon,
+                            tint: tagColor,
+                            spinnerOverAgent: showSpinnerOverAgentIcons
+                        )
+                    } else if let agentIcon {
+                        // "None" suppresses the user's icon, not the agent
+                        // logo — a live status signal, like the else branch.
+                        SidebarRowIcon(
+                            symbol: iconSymbol,
+                            index: index,
+                            agent: agentIcon,
+                            agentTint: tagColor
+                        )
+                        .foregroundStyle(tagColor ?? .secondary)
                     }
-                    .labelStyle(.titleAndIcon)
                 }
+                .labelStyle(.titleAndIcon)
             } else {
                 Label {
                     titleContent
@@ -1417,10 +1420,12 @@ private struct TabStatusGlyph: View {
     }
 }
 
-/// Prefixes a sidebar row with its project's color: a bar at the leading edge.
-/// The fallback carrier for the tag, used only where the row has no glyph of
-/// its own to tint (the "None" icon preference). No gutter is reserved when
-/// untagged — tagging is opt-in, and reserving it would re-indent every
+/// Prefixes a PROJECT row with its color: a bar at the leading edge, for the
+/// one case where that row has no glyph to tint (the "None" icon preference).
+/// Deliberately not used on tab rows — a stripe per tab is the shape this
+/// feature started as and review rejected, and reinstating it under "None"
+/// brought the same clutter back one preference away. No gutter is reserved
+/// when untagged — tagging is opt-in, and reserving it would re-indent every
 /// sidebar.
 private struct ProjectColorStripe<Content: View>: View {
     private let color: ProjectColor?
