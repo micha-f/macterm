@@ -1129,14 +1129,12 @@ private struct SidebarTabRow: View {
         iconSymbolOverride ?? tabIconSymbol
     }
 
-    /// What the icon slot tints with: the project's tag, else the row's usual
-    /// secondary. An agent logo overrides it from the inside (`SidebarRowIcon`
-    /// paints its own brand color) — the logo is a live status signal, and the
-    /// project a row belongs to is already named by the section above it.
+    /// The project tag's color, or nil when the project is untagged — which
+    /// is what leaves an untagged row exactly as it was, agent logos in their
+    /// brand colors included.
     @MainActor
-    private var iconTint: Color {
-        guard let projectColor else { return .secondary }
-        return MactermTheme.color(for: projectColor)
+    private var tagColor: Color? {
+        projectColor.map { MactermTheme.color(for: $0) }
     }
 
     var body: some View {
@@ -1183,12 +1181,17 @@ private struct SidebarTabRow: View {
                             symbol: iconSymbol,
                             index: index,
                             agent: agentIcon,
-                            tint: iconTint,
+                            tint: tagColor,
                             spinnerOverAgent: showSpinnerOverAgentIcons
                         )
                     } else {
-                        SidebarRowIcon(symbol: iconSymbol, index: index, agent: agentIcon)
-                            .foregroundStyle(iconTint)
+                        SidebarRowIcon(
+                            symbol: iconSymbol,
+                            index: index,
+                            agent: agentIcon,
+                            agentTint: tagColor
+                        )
+                        .foregroundStyle(tagColor ?? .secondary)
                     }
                 }
             }
@@ -1352,9 +1355,9 @@ private struct TabStatusGlyph: View {
     let symbol: String
     let index: Int
     var agent: AgentIcon?
-    /// The project tag's color when the row's project has one, else the row's
-    /// usual secondary — see `SidebarTabRow.iconTint`.
-    var tint: Color = .secondary
+    /// The project tag's color, nil when untagged — see
+    /// `SidebarTabRow.tagColor`.
+    var tint: Color?
     var spinnerOverAgent = true
     @AppStorage(Preferences.Keys.sidebarIconSize)
     private var iconSizeRaw = SidebarIconSize.medium.rawValue
@@ -1375,20 +1378,20 @@ private struct TabStatusGlyph: View {
         switch state {
         case .running:
             if let agent, !spinnerOverAgent {
-                SidebarRowIcon(symbol: symbol, index: index, agent: agent)
-                    .foregroundStyle(tint)
+                SidebarRowIcon(symbol: symbol, index: index, agent: agent, agentTint: tint)
+                    .foregroundStyle(tint ?? .secondary)
                     .help("Running")
             } else {
                 let side = 16 * size.glyphScale
                 ProgressView()
                     .controlSize(spinnerControlSize)
-                    .tint(tint)
+                    .tint(tint ?? .secondary)
                     .help("Running")
                     .frame(width: side, height: side)
             }
         case .done:
-            SidebarRowIcon(symbol: symbol, index: index, agent: agent)
-                .foregroundStyle(tint)
+            SidebarRowIcon(symbol: symbol, index: index, agent: agent, agentTint: tint)
+                .foregroundStyle(tint ?? .secondary)
                 .overlay(alignment: .bottomTrailing) {
                     // Opaque (not translucent) so it reads clearly over the
                     // icon and the sidebar background. Nested in a background
@@ -1407,8 +1410,8 @@ private struct TabStatusGlyph: View {
                 }
                 .help("Done")
         case .idle:
-            SidebarRowIcon(symbol: symbol, index: index, agent: agent)
-                .foregroundStyle(tint)
+            SidebarRowIcon(symbol: symbol, index: index, agent: agent, agentTint: tint)
+                .foregroundStyle(tint ?? .secondary)
                 .help("Idle")
         }
     }
@@ -1470,6 +1473,12 @@ private struct SidebarRowIcon: View {
     let symbol: String
     let index: Int
     var agent: AgentIcon?
+    /// The project tag's color, which outranks the agent's brand color: a
+    /// tagged project claims every icon in its rows, so the logo's SHAPE says
+    /// which agent and the color says which project. Coral sitting among a
+    /// red project's icons read as a mistake rather than as a brand. Nil
+    /// (untagged) keeps the brand color.
+    var agentTint: Color?
     @AppStorage(Preferences.Keys.sidebarIconSize)
     private var iconSizeRaw = SidebarIconSize.medium.rawValue
     /// Scales with the user's text size like the sibling SF Symbols do; a
@@ -1485,14 +1494,15 @@ private struct SidebarRowIcon: View {
         if let agent {
             // A live AI agent in the tab overrides the user's chosen icon —
             // the logo is a status signal, tinted with the agent's brand color
-            // (overriding the row's .secondary tint).
+            // (overriding the row's .secondary tint) unless the project's own
+            // tag claims it.
             let side = agentIconSize * size.glyphScale
             Image(agent.rawValue)
                 .renderingMode(.template)
                 .resizable()
                 .scaledToFit()
                 .frame(width: side, height: side)
-                .foregroundStyle(agent.brandColor)
+                .foregroundStyle(agentTint ?? agent.brandColor)
         } else if Preferences.numberIconChoices.contains(symbol) {
             NumberGlyph(index: index, variant: symbol, size: size)
         } else {
