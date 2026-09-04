@@ -201,12 +201,6 @@ struct MainWindow: View {
                         TabSwitcherToolbarItem(availableWidth: detailWidth)
                     }
                 }
-                // Declared last among the `.navigation` items so it lands
-                // nearest the window title — the badge reads as part of the
-                // header, not as a control next to the sidebar toggle.
-                ToolbarItem(placement: .navigation) {
-                    ProjectColorBadge(project: activeProject)
-                }
             }
         }
         .overlay(alignment: .leading) {
@@ -752,31 +746,6 @@ struct MainWindow: View {
         // The pinned workspace has no project directory worth advertising.
         if project.id == PinnedTabs.projectID { return "" }
         return project.path
-    }
-}
-
-/// The active project's color tag beside the window title: a dot, never the
-/// project's own icon. Drawing the icon was tried and dropped in review — at
-/// titlebar size a tinted folder reads as a control rather than as a tag. The
-/// dot is sized explicitly rather than left to a toolbar item's own layout,
-/// which is what made the icon version outsize the title next to it.
-///
-/// Nothing renders for an untagged project, or for the pinned rows (they have
-/// no project, so `activeProject` is nil).
-private struct ProjectColorBadge: View {
-    let project: Project?
-    /// Tracks the title's text size, so the dot keeps its proportion when the
-    /// user scales text up.
-    @ScaledMetric(relativeTo: .body)
-    private var diameter: CGFloat = 10
-
-    var body: some View {
-        if let project, let color = project.color {
-            Circle()
-                .fill(MactermTheme.color(for: color))
-                .frame(width: diameter, height: diameter)
-                .accessibilityLabel("\(project.name), \(color.displayName)")
-        }
     }
 }
 

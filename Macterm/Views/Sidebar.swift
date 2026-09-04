@@ -1013,13 +1013,8 @@ private struct SidebarProjectRow: View {
     var body: some View {
         Group {
             if projectIconSymbol == Preferences.noIcon {
-                // No glyph to tint with icons off, so the tag falls back to
-                // a stripe. Only here: a tab row under the same preference
-                // shows no tag rather than a second column of stripes.
-                ProjectColorStripe(color: project.color) {
-                    titleContent
-                }
-                .padding(.leading, 6)
+                titleContent
+                    .padding(.leading, 6)
             } else {
                 Label {
                     titleContent
@@ -1416,40 +1411,6 @@ private struct TabStatusGlyph: View {
             SidebarRowIcon(symbol: symbol, index: index, agent: agent, agentTint: tint)
                 .foregroundStyle(tint ?? .secondary)
                 .help("Idle")
-        }
-    }
-}
-
-/// Prefixes a PROJECT row with its color: a bar at the leading edge, for the
-/// one case where that row has no glyph to tint (the "None" icon preference).
-/// Deliberately not used on tab rows — a stripe per tab is the shape this
-/// feature started as and review rejected, and reinstating it under "None"
-/// brought the same clutter back one preference away. No gutter is reserved
-/// when untagged — tagging is opt-in, and reserving it would re-indent every
-/// sidebar.
-private struct ProjectColorStripe<Content: View>: View {
-    private let color: ProjectColor?
-    private let content: Content
-    /// Scaled with the row's text. Fixed rather than stretched: a
-    /// `maxHeight: .infinity` child can grow a List row instead of filling it.
-    @ScaledMetric(relativeTo: .body)
-    private var height: CGFloat = 15
-
-    init(color: ProjectColor?, @ViewBuilder content: () -> Content) {
-        self.color = color
-        self.content = content()
-    }
-
-    var body: some View {
-        if let color {
-            HStack(spacing: 6) {
-                Capsule(style: .continuous)
-                    .fill(MactermTheme.color(for: color))
-                    .frame(width: 3, height: height)
-                content
-            }
-        } else {
-            content
         }
     }
 }

@@ -1,7 +1,8 @@
 import Foundation
 
-/// A project's optional color tag, drawn on the sidebar icons of the project
-/// and of each of its tabs, and as a dot beside the window title.
+/// A project's optional color tag, drawn as a tint on the sidebar icons of
+/// the project and of each of its tabs — and nowhere else, so a row with no
+/// icon shows no tag.
 ///
 /// Fixed system colors, not the ghostty palette — the same exception
 /// `AgentIcon.brandColor` takes. Deriving them from the user's theme was tried
