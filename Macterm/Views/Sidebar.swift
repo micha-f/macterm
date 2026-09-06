@@ -1129,10 +1129,24 @@ private struct SidebarTabRow: View {
 
     /// The project tag's color, or nil when the project is untagged — which
     /// is what leaves an untagged row exactly as it was, agent logos in their
-    /// brand colors included.
+    /// brand colors included. Also nil while the row is unloaded: the dim IS
+    /// the "no shells behind this" signal, and a saturated tag beside a greyed
+    /// title reads as half-live.
     @MainActor
     private var tagColor: Color? {
-        projectColor.map { MactermTheme.color(for: $0) }
+        guard !isUnloaded else { return nil }
+        return projectColor.map { MactermTheme.color(for: $0) }
+    }
+
+    /// The icon's style: the tag when tagged, else the hierarchical
+    /// `.secondary` the row has always used. `AnyShapeStyle` because the two
+    /// arms are different style types — a `??` would bind the whole
+    /// expression to `Color` and silently swap `HierarchicalShapeStyle`
+    /// (which resolves against a selected row's own foreground) for the fixed
+    /// `Color.secondary`, changing every UNTAGGED row.
+    @MainActor
+    private var iconStyle: AnyShapeStyle {
+        tagColor.map { AnyShapeStyle($0) } ?? AnyShapeStyle(.secondary)
     }
 
     var body: some View {
@@ -1165,7 +1179,7 @@ private struct SidebarTabRow: View {
                             agent: agentIcon,
                             agentTint: tagColor
                         )
-                        .foregroundStyle(tagColor ?? .secondary)
+                        .foregroundStyle(iconStyle)
                     }
                 }
                 .labelStyle(.titleAndIcon)
@@ -1189,7 +1203,7 @@ private struct SidebarTabRow: View {
                             agent: agentIcon,
                             agentTint: tagColor
                         )
-                        .foregroundStyle(tagColor ?? .secondary)
+                        .foregroundStyle(iconStyle)
                     }
                 }
             }
@@ -1372,12 +1386,19 @@ private struct TabStatusGlyph: View {
         size == .small ? .mini : .small
     }
 
+    /// The tag when tagged, else the hierarchical `.secondary` these glyphs
+    /// have always used — see `SidebarTabRow.iconStyle` for why a `??` here
+    /// would quietly change every untagged row.
+    private var iconStyle: AnyShapeStyle {
+        tint.map { AnyShapeStyle($0) } ?? AnyShapeStyle(.secondary)
+    }
+
     var body: some View {
         switch state {
         case .running:
             if let agent, !spinnerOverAgent {
                 SidebarRowIcon(symbol: symbol, index: index, agent: agent, agentTint: tint)
-                    .foregroundStyle(tint ?? .secondary)
+                    .foregroundStyle(iconStyle)
                     .help("Running")
             } else {
                 let side = 16 * size.glyphScale
@@ -1389,7 +1410,7 @@ private struct TabStatusGlyph: View {
             }
         case .done:
             SidebarRowIcon(symbol: symbol, index: index, agent: agent, agentTint: tint)
-                .foregroundStyle(tint ?? .secondary)
+                .foregroundStyle(iconStyle)
                 .overlay(alignment: .bottomTrailing) {
                     // Opaque (not translucent) so it reads clearly over the
                     // icon and the sidebar background. Nested in a background
@@ -1409,7 +1430,7 @@ private struct TabStatusGlyph: View {
                 .help("Done")
         case .idle:
             SidebarRowIcon(symbol: symbol, index: index, agent: agent, agentTint: tint)
-                .foregroundStyle(tint ?? .secondary)
+                .foregroundStyle(iconStyle)
                 .help("Idle")
         }
     }
